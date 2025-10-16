@@ -18,3 +18,4 @@ for file in files:
     print(f"📦 Inv.cost={m['inventory_cost']} ⛔ Backlog={m['backlog_cost']} 💰 Total={m['total_cost']}")
     print(f"📈 PeakInv={m['peak_inventory']}, PeakBack={m['peak_backlog']}")
     print(f"📉 Backlog trend slope: {trend:+.2f}")
+a

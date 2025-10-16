@@ -5,12 +5,18 @@ from typing import Dict, Any, List
 app = FastAPI()
 
 STUDENT_EMAIL = "dmdere@taltech.ee"
-ALGO_NAME = "NaiveBeerBot"
-VERSION = "v1.0"
+ALGO_NAME = "NaiveBeerBot_Improved"
+VERSION = "v1.1"
 
 ROLES = ["retailer", "wholesaler", "distributor", "factory"]
 DEFAULT_INV_COST = 1.0
 DEFAULT_BACKLOG_COST = 2.0
+
+
+def clamp(x: float, lo: float, hi: float) -> float:
+    """Ограничивает значение между нижним и верхним порогом"""
+    return max(lo, min(hi, x))
+
 
 def compute_metrics(weeks: List[Dict[str, Any]], inv_cost=DEFAULT_INV_COST, backlog_cost=DEFAULT_BACKLOG_COST):
     inv_sum = 0.0
@@ -37,16 +43,40 @@ def compute_metrics(weeks: List[Dict[str, Any]], inv_cost=DEFAULT_INV_COST, back
         "peak_backlog": int(peak_back),
     }
 
-def naive_order(role: str, weeks: List[Dict[str, Any]]) -> int:
+
+def smart_order(role: str, weeks: List[Dict[str, Any]]) -> int:
+    """Улучшённая логика заказа"""
     if len(weeks) < 1:
         return 10
-    return int(weeks[-1]["roles"][role]["incoming_orders"])
+
+    last = weeks[-1]["roles"][role]
+    incoming = last["incoming_orders"]
+    backlog = last["backlog"]
+    inventory = last["inventory"]
+
+    # Базовый заказ — как у наивного
+    base = incoming
+
+    # Добавляем компенсацию backlog
+    compensation = 0.4 * backlog  # можно отрегулировать
+
+    # Амортизируем (сглаживаем)
+    smooth = (inventory * 0.1)
+
+    # Итог
+    order = base + compensation - smooth
+
+    # Ограничиваем
+    return int(clamp(order, 4, 30))
+
 
 def decide_blackbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
-    return {r: naive_order(r, weeks) for r in ROLES}
+    return {r: smart_order(r, weeks) for r in ROLES}
+
 
 def decide_glassbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
     return decide_blackbox(weeks)
+
 
 @app.post("/api/decision")
 async def decision(req: Request):
@@ -58,7 +88,7 @@ async def decision(req: Request):
             "algorithm_name": ALGO_NAME,
             "version": VERSION,
             "supports": {"blackbox": True, "glassbox": True},
-            "message": "NaiveBeerBot ready"
+            "message": "NaiveBeerBot_Improved ready"
         })
 
     weeks = body.get("weeks", [])
