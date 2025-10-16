@@ -5,71 +5,73 @@ from typing import Dict, Any, List
 app = FastAPI()
 
 STUDENT_EMAIL = "dmdere@taltech.ee"
-ALGO_NAME = "BeerBot_Elite_AdaptivePredictive"
-VERSION = "v3.0.0"
+ALGO_NAME = "BeerBot_Ultra_CostAware"
+VERSION = "v4.0.0"
 
-# === Utilities ===
 def moving_avg(values: List[int], window=3):
     vals = values[-window:] if len(values) >= window else values
     return sum(vals) / len(vals) if vals else 0
 
-def trend(values: List[int]) -> float:
-    if len(values) < 3:
-        return 0
-    a, b, c = values[-3:]
-    return ((b + c) / 2 - a) / max(a, 1)
-
-def volatility(values: List[int]) -> float:
-    if len(values) < 3:
-        return 0
-    avg = moving_avg(values, 3)
-    return sum(abs(v - avg) for v in values[-3:]) / (avg + 1e-6)
+def linear_trend(values: List[int]) -> float:
+    """Approximate linear trend (slope) for last 4 points."""
+    if len(values) < 4:
+        return 0.0
+    n = 4
+    x = list(range(n))
+    y = values[-n:]
+    avg_x, avg_y = sum(x)/n, sum(y)/n
+    num = sum((xi-avg_x)*(yi-avg_y) for xi, yi in zip(x,y))
+    den = sum((xi-avg_x)**2 for xi in x)
+    return num / den if den else 0.0
 
 def clamp(x, lo, hi): return max(lo, min(hi, x))
 def as_int(x): return int(round(x)) if x > 0 else 0
 
-def get_state(w, r): return w["roles"][r]
+def get_state(week, role): return week["roles"][role]
 def incoming_series(weeks, role): return [get_state(w, role)["incoming_orders"] for w in weeks]
 def prev_order(weeks, role): 
     if len(weeks) >= 2: return weeks[-2]["orders"][role]
     return 10
 
-# === Decision core ===
-def decide_elite(weeks, role):
+def decide_ultra(weeks, role):
     last = get_state(weeks[-1], role)
     inv, back = last["inventory"], last["backlog"]
     inc = incoming_series(weeks, role)
     avg_demand = moving_avg(inc, 3)
-    tr = trend(inc)
-    vol = volatility(inc)
     prev = prev_order(weeks, role)
 
-    # Forecast next demand
-    forecast = avg_demand * (1 + clamp(tr * 0.7, -0.3, 0.4))
+    # --- Trend forecasting ---
+    slope = linear_trend(inc)
+    forecast = avg_demand + slope * 0.5
+    forecast = max(0, forecast)
 
-    # Dynamic safety stock (reduces when demand stable)
-    safety = (1.0 + min(vol, 0.5)) * forecast
+    # --- Dynamic safety stock ---
+    volatility = sum(abs(inc[-i] - avg_demand) for i in range(1, min(3, len(inc))) )
+    stability_factor = 1.0 - clamp(volatility / (avg_demand + 1e-6), 0, 0.5)
+    safety_stock = avg_demand * (0.9 + 0.2 * stability_factor)
 
-    # Adaptive gain: stronger when backlog high
-    gain = 0.4 + clamp(back / 15, 0, 0.3)
+    # --- Cost-aware correction ---
+    backlog_weight = 1.0 if back > 5 else 0.6
+    inventory_penalty = 0.3 if inv > 1.2 * safety_stock else 0.5
+    correction = (safety_stock - inv) * inventory_penalty + back * backlog_weight
 
-    # Error control
-    error = safety - inv
-    base_order = forecast + back * 0.8 + gain * error
+    # --- Base order ---
+    base_order = forecast + correction
+    base_order = max(base_order, avg_demand * 0.5)
 
-    # Anti-overshoot: slow decrease if inventory >> target
-    if inv > 1.5 * safety:
+    # --- Anti-overshoot & damping ---
+    if inv > 1.5 * safety_stock:
         base_order *= 0.7
+    damping = 0.35 if inv > safety_stock else 0.55
+    order = prev + damping * (base_order - prev)
 
-    # Smooth momentum
-    damping = 0.5 if back > 5 else 0.35
-    new_order = prev + damping * (base_order - prev)
-    new_order = clamp(new_order, prev - 3, prev + 3)
-    return as_int(new_order)
+    # --- Clamp weekly change ---
+    order = clamp(order, prev - 2, prev + 2)
+    return as_int(order)
 
 def decide_blackbox(weeks):
     roles = ["retailer", "wholesaler", "distributor", "factory"]
-    return {r: decide_elite(weeks, r) for r in roles}
+    return {r: decide_ultra(weeks, r) for r in roles}
 
 @app.post("/api/decision")
 async def decision(req: Request):
