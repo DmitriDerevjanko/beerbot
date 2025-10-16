@@ -5,18 +5,27 @@ from typing import Dict, Any, List
 app = FastAPI()
 
 STUDENT_EMAIL = "dmdere@taltech.ee"
-ALGO_NAME = "NaiveBeerBot_OrderUpTo"
-VERSION = "v1.2"
+ALGO_NAME = "BeerBot_OrderUpTo_Pro"
+VERSION = "v2.0"
 
 ROLES = ["retailer", "wholesaler", "distributor", "factory"]
+ROLE_LEADTIME = {  # effective lead-time in weeks per role (tune if needed)
+    "retailer": 1.5,
+    "wholesaler": 2.5,
+    "distributor": 3.0,
+    "factory": 3.5,
+}
+
 DEFAULT_INV_COST = 1.0
 DEFAULT_BACKLOG_COST = 2.0
 
-# --- helpers ---
+
+# ---------- helpers ----------
 def clamp(x: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, x))
 
-def ema(series: List[float], alpha: float = 0.4, default: float = 10.0) -> float:
+
+def ema(series: List[float], alpha: float, default: float = 10.0) -> float:
     if not series:
         return default
     v = series[0]
@@ -24,12 +33,13 @@ def ema(series: List[float], alpha: float = 0.4, default: float = 10.0) -> float
         v = alpha * x + (1 - alpha) * v
     return v
 
-def last_series(weeks: List[Dict[str, Any]], role: str, key: str) -> List[float]:
+
+def vec(weeks: List[Dict[str, Any]], role: str, key: str) -> List[float]:
     out = []
     for w in weeks:
-        st = w.get("roles", {}).get(role, {})
-        out.append(float(st.get(key, 0)))
+        out.append(float(w.get("roles", {}).get(role, {}).get(key, 0)))
     return out
+
 
 def compute_metrics(weeks: List[Dict[str, Any]], inv_cost=DEFAULT_INV_COST, backlog_cost=DEFAULT_BACKLOG_COST):
     inv_sum = 0.0
@@ -56,51 +66,58 @@ def compute_metrics(weeks: List[Dict[str, Any]], inv_cost=DEFAULT_INV_COST, back
         "peak_backlog": int(peak_back),
     }
 
-# --- core policy: order-up-to with EMA forecast ---
-def smart_order(role: str, weeks: List[Dict[str, Any]]) -> int:
-    # Параметры (можно тюнить)
-    L = 3.0          # оценка совокупного lead time в неделях
-    ALPHA = 0.45     # EMA для прогноза спроса
-    BETA = 0.35      # доля safety stock от прогноза
-    MIN_O, MAX_O = 4, 28
-    DAMP = 0.25      # мягкое демпфирование (ограничивает шаг)
 
+# ---------- policy ----------
+def order_for(role: str, weeks: List[Dict[str, Any]]) -> int:
     if not weeks:
         return 10
 
-    inv_hist = last_series(weeks, role, "inventory")
-    back_hist = last_series(weeks, role, "backlog")
-    inord_hist = last_series(weeks, role, "incoming_orders")
+    L = ROLE_LEADTIME.get(role, 3.0)
+    inv = vec(weeks, role, "inventory")[-1]
+    back = vec(weeks, role, "backlog")[-1]
+    in_orders = vec(weeks, role, "incoming_orders")
 
-    inv = inv_hist[-1]
-    back = back_hist[-1]
+    # Demand forecast (short EMA reacts, long EMA stabilizes)
+    f_short = ema(in_orders[-6:], alpha=0.5, default=10.0)
+    f_long  = ema(in_orders[-12:], alpha=0.25, default=f_short)
+    forecast = 0.6 * f_short + 0.4 * f_long
 
-    # Прогноз спроса на неделю вперёд
-    forecast = ema(inord_hist[-6:], alpha=ALPHA, default=10.0)
-
-    # Целевая позиция и текущая позиция
-    safety = BETA * forecast
+    # Target inventory position: demand over lead time + safety
+    safety = 0.35 * forecast
     target_pos = L * forecast + safety
-    inv_pos = inv - back  # approx без pipeline
 
-    # Сырая рекомендация заказа
-    raw = forecast + (target_pos - inv_pos) / max(1.0, L)
+    # Current (approximate) inventory position (no pipeline info available)
+    inv_pos = inv - back
 
-    # Демпфирование: не даём прыгать > DAMP * forecast за раз
-    # В качестве предыдущего заказа берём последнюю входящую как прокси,
-    # чтобы не зависеть от наличия истории наших заказов.
-    prev_proxy = inord_hist[-1]
-    max_step = DAMP * max(6.0, forecast)
-    ordered = prev_proxy + clamp(raw - prev_proxy, -max_step, max_step)
+    # Base order from order-up-to logic
+    base = forecast + (target_pos - inv_pos) / max(1.0, L)
 
-    return int(clamp(ordered, MIN_O, MAX_O))
+    # Backlog clearance spread across a horizon (avoid spikes)
+    horizon = max(2.0, L)
+    clear_term = back / horizon
+
+    raw = base + 0.5 * clear_term  # 0.5 weight to avoid overshoot
+
+    # Damping vs last observed incoming orders (proxy for last order)
+    prev = in_orders[-1] if in_orders else forecast
+    max_step = 0.25 * max(6.0, forecast)  # limit per-week change
+    damped = prev + clamp(raw - prev, -max_step, max_step)
+
+    # Dynamic bounds relative to forecast to reduce bullwhip
+    lo = max(4.0, 0.6 * forecast)
+    hi = max(lo + 2.0, 1.6 * forecast + 0.6 * clear_term)
+    return int(clamp(damped, lo, hi))
+
 
 def decide_blackbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
-    return {r: smart_order(r, weeks) for r in ROLES}
+    return {r: order_for(r, weeks) for r in ROLES}
+
 
 def decide_glassbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
     return decide_blackbox(weeks)
 
+
+# ---------- API ----------
 @app.post("/api/decision")
 async def decision(req: Request):
     body = await req.json()
@@ -111,7 +128,7 @@ async def decision(req: Request):
             "algorithm_name": ALGO_NAME,
             "version": VERSION,
             "supports": {"blackbox": True, "glassbox": True},
-            "message": "OrderUpTo EMA policy ready"
+            "message": "Ready",
         })
 
     weeks = body.get("weeks", [])
