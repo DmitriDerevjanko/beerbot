@@ -4,188 +4,174 @@ from typing import Dict, Any, List
 
 app = FastAPI()
 
-STUDENT_EMAIL = "dmdere@taltech.ee"
-ALGO_NAME = "BeerBot_Ultra_CostAware"
-VERSION = "v6.1"
+STUDENT_EMAIL = "dmdere@taltech.ee"        
+ALGO_NAME = "BeerBot_Ultra_CostAware"       
+VERSION = "v7.5"                            
 
-# --------------------- Helper Functions ---------------------
+# --------------------- Helpers ---------------------
 def clamp(x: float, lo: float, hi: float) -> float:
-    """Clamp a value between lower and upper bounds."""
-    return max(lo, min(hi, x))
+    return lo if x < lo else hi if x > hi else x
 
 def ema(series: List[float], alpha: float) -> float:
-    """Compute exponential moving average (EMA) for a time series."""
     if not series:
         return 0.0
-    v = series[0]
+    v = float(series[0])
     for x in series[1:]:
-        v = alpha * x + (1 - alpha) * v
+        v = alpha * float(x) + (1.0 - alpha) * v
     return v
 
+def double_ema(series: List[float], alpha1: float = 0.35, alpha2: float = 0.35) -> float:
+    if not series:
+        return 0.0
+    first = []
+    v = float(series[0])
+    for x in series:
+        v = alpha1 * float(x) + (1.0 - alpha1) * v
+        first.append(v)
+    return ema(first, alpha2)
+
 def get_state(week: Dict[str, Any], role: str) -> Dict[str, int]:
-    """Return the state dictionary for a specific role in a given week."""
     return week["roles"][role]
 
 def incoming_series(weeks: List[Dict[str, Any]], role: str) -> List[int]:
-    """Extract the list of incoming orders for a given role across all weeks."""
     return [int(get_state(w, role)["incoming_orders"]) for w in weeks]
 
+def backlog_series(weeks: List[Dict[str, Any]], role: str) -> List[int]:
+    return [int(get_state(w, role)["backlog"]) for w in weeks]
+
 def prev_order(weeks: List[Dict[str, Any]], role: str) -> int:
-    """Return the previous week's order for a given role, or 10 if not available."""
-    if len(weeks) >= 2:
-        return int(weeks[-2]["orders"][role])
-    return 10
+    return int(weeks[-2]["orders"][role]) if len(weeks) >= 2 else 10
 
-# --------------------- APIOBPCS+ Reactive Logic ---------------------
+def linreg_slope_last(series: List[int], window: int = 5) -> float:
+
+    n = min(len(series), window)
+    if n < 3:
+        return 0.0
+    y = [float(v) for v in series[-n:]]
+    x = list(range(n))
+    sx = sum(x)
+    sy = sum(y)
+    sxx = sum(i * i for i in x)
+    sxy = sum(x[i] * y[i] for i in range(n))
+    denom = n * sxx - sx * sx
+    if denom == 0:
+        return 0.0
+    a = (n * sxy - sx * sy) / denom   # slope
+    mean_y = sy / n
+    return a / (mean_y + 1e-6)
+
+# --------------------- Decision Logic v7.5 ---------------------
 def decide_beerbot(weeks: List[Dict[str, Any]], role: str) -> int:
-    """
-    BeerBot Ultra Cost-Aware v6.1 (Reactive Balance)
-    Faster backlog recovery, smoother control, and improved EMA response.
-    """
+
     last = weeks[-1]["roles"][role]
-    inv  = int(last["inventory"])
-    back = int(last["backlog"])
-    inc  = incoming_series(weeks, role)
+    inv: int = int(last["inventory"])
+    back: int = int(last["backlog"])
+    inc = incoming_series(weeks, role)
+    backs = backlog_series(weeks, role)
     prev = prev_order(weeks, role)
+    week_now = int(weeks[-1]["week"]) if "week" in weeks[-1] else len(weeks)
+    phase = clamp(week_now / max(int(weeks[0].get("weeks_total", 36)), 36), 0.0, 1.0)
 
-    # --- Typical logistics delay (2 weeks)
-    L = 2
+    D_smooth = double_ema(inc, 0.35, 0.35)
+    slope = linreg_slope_last(inc, 5)  
+    if slope > 0.18:
+        D_hat = D_smooth * 1.15
+    elif slope < -0.12:
+        D_hat = D_smooth * 0.90
+    else:
+        D_hat = D_smooth
 
-    # --- Base parameters
-    b_base = 0.80
-    k_I    = 0.40     # Slightly higher: faster correction
-    k_P    = 0.22
-    k_B    = 0.12
-    up_step_max   = 6
-    down_step_max = 4
-
-    # --- Volatility detection
-    if len(inc) >= 3:
-        avg3 = sum(inc[-3:]) / 3
-        vol = sum(abs(x - avg3) for x in inc[-3:]) / (avg3 + 1e-6)
+    if len(inc) >= 4:
+        recent = inc[-4:]
+        m = sum(recent) / 4.0
+        vol = (sum(abs(x - m) for x in recent) / 4.0) / (m + 1e-6)  
+        vol = clamp(vol, 0.0, 1.5)
     else:
         vol = 0.0
 
-    # --- Demand trend detection
-    if len(inc) >= 6:
-        last3 = sum(inc[-3:]) / 3
-        prev3 = sum(inc[-6:-3]) / 3
-        spike_up = last3 > prev3 * 1.20
-        drop_dn  = last3 < prev3 * 0.85
-    else:
-        spike_up = drop_dn = False
+    L = 2
+    if len(backs) >= 3 and backs[-1] > backs[-2] >= backs[-3]:  # бэклог ухудшается
+        L = 3
 
-    # --- Adaptive EMA (slightly faster)
-    alpha = clamp(0.25 + 0.3 * (1.0 - clamp(vol, 0.0, 1.0)), 0.20, 0.65)
-    D_hat = ema(inc, alpha)
-
-    # --- Demand momentum predictor
-    if len(inc) >= 3:
-        trend = (inc[-1] - inc[-3]) / max(inc[-3], 1)
-    else:
-        trend = 0.0
-    D_hat *= (1 + 0.25 * trend)
-
-    # --- Estimate pipeline
     pipe_est = 0
-    for lag in range(1, L + 1):
-        idx = len(weeks) - 1 - lag
-        if idx >= 0:
-            pipe_est += int(weeks[idx]["orders"][role])
+    for i in range(max(0, len(weeks) - L), len(weeks)):
+        pipe_est += int(weeks[i]["orders"][role]) if "orders" in weeks[i] else 0
 
-    # --- Targets
-    S_pipe   = L * D_hat
-    safety_r = b_base * (1.0 + 0.5 * clamp(vol, 0.0, 1.0))
-    S_invpos = max(0.0, safety_r * D_hat)
+    base_kI, base_kP, base_kB = 0.25, 0.15, 0.10
 
-    # --- Event-based adaptation
-    if spike_up:
-        k_P *= 1.25
-        k_B *= 1.25
-        S_pipe *= 1.15
-        up_step_max = 7
-    if drop_dn:
-        S_invpos *= 0.80
-        S_pipe   *= 0.85
-        k_B      *= 0.70
-        down_step_max = 5
+    kI = base_kI * (1.0 + 0.40 * clamp(vol, 0.0, 1.0)) * (1.0 - 0.25 * phase)
+    kP = base_kP * (1.0 + 0.35 * clamp(abs(slope), 0.0, 1.0)) * (1.0 - 0.20 * phase)
+    kB = base_kB * (1.0 + 0.60 * (1 if back > D_hat else 0)) * (1.0 - 0.15 * phase)
 
-    # --- Dynamic backlog adaptation
-    if back > D_hat * 1.2:
-        k_B *= 1.5
-        k_P *= 0.9
-    elif back < D_hat * 0.5:
-        k_B *= 0.8
+    safety = 0.85 + 0.25 * clamp(vol, 0.0, 1.0)           
+    target_inv = safety * D_hat
+    target_pipe = L * D_hat
 
-    # --- Inventory position
     inv_pos = inv - back + pipe_est
 
-    # --- Core APIOBPCS controller
     order_raw = (
         D_hat
-        + k_I * (S_invpos - inv_pos)
-        + k_P * (S_pipe   - pipe_est)
-        + k_B * back
+        + kI * (target_inv - inv_pos)
+        + kP * (target_pipe - pipe_est)
+        + kB * back
     )
 
-    # --- Backlog recovery boost
-    if back > 200 and inv < D_hat:
-        order_raw *= 1.10
+    if len(backs) >= 3 and backs[-1] > backs[-2] > backs[-3]:
+        order_raw *= 1.12
 
-    # --- Anti-oversupply protection
-    if inv_pos > (S_invpos + 0.30 * S_pipe) * 1.5:
-        order_raw *= 0.75
+    if back == 0 and inv > 2.0 * D_hat:
+        order_raw *= 0.82
 
-    # --- Step limits
+    up_base = 5 if phase < 0.5 else 4
+    dn_base = 4 if phase < 0.5 else 3
+    step_up = int(round(up_base + 2 * clamp(vol, 0.0, 1.0)))  
+    step_dn = int(round(dn_base + 1 * clamp(vol, 0.0, 1.0)))
+
     delta = order_raw - prev
-    if   delta >  up_step_max:   order_limited = prev + up_step_max
-    elif delta < -down_step_max: order_limited = prev - down_step_max
-    else:                        order_limited = order_raw
+    if   delta >  step_up: order_raw = prev + step_up
+    elif delta < -step_dn: order_raw = prev - step_dn
 
-    # --- Momentum damping (smoother transitions)
-    smooth_factor = 0.25
-    order_final = (1 - smooth_factor) * order_limited + smooth_factor * prev
+    damping = clamp(0.30 + 0.35 * phase + 0.10 * clamp(vol, 0.0, 1.0), 0.25, 0.75)
+    order_final = (1.0 - damping) * order_raw + damping * prev
 
-    # --- Backlog safeguard
-    if back > 0 and order_final < D_hat:
-        order_final = D_hat
+    min_order = 0.85 * D_hat
+    if order_final < min_order:
+        order_final = min_order
 
-    # Return non-negative integer order quantity
-    return int(round(order_final)) if order_final > 0 else 0
+    return int(round(clamp(order_final, 0.0, 999999)))
 
 # --------------------- Mode Wrappers ---------------------
 def decide_blackbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
-    """Independent control for each role (BlackBox mode)."""
     roles = ["retailer", "wholesaler", "distributor", "factory"]
     return {r: decide_beerbot(weeks, r) for r in roles}
 
 def decide_glassbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
-    """Shared logic for all roles (GlassBox mode)."""
     return decide_blackbox(weeks)
 
 # --------------------- API Endpoint ---------------------
 @app.post("/api/decision")
 async def decision(req: Request):
-    """Main BeerBot API handler for both handshake and weekly decision requests."""
     body = await req.json()
 
     # --- Handshake ---
-    if body.get("handshake"):
+    if body.get("handshake") is True:
         return JSONResponse({
             "ok": True,
             "student_email": STUDENT_EMAIL,
             "algorithm_name": ALGO_NAME,
             "version": VERSION,
             "supports": {"blackbox": True, "glassbox": True},
-            "message": "BeerBot ready"
+            "message": "BeerBot ready"       
         })
 
-    # --- Weekly decision step ---
+    # --- Weekly step ---
     weeks = body.get("weeks", [])
     mode = body.get("mode", "blackbox")
 
     if not weeks:
-        return JSONResponse({"orders": {r: 10 for r in ["retailer", "wholesaler", "distributor", "factory"]}})
+        default_orders = {r: 10 for r in ["retailer", "wholesaler", "distributor", "factory"]}
+        return JSONResponse({"orders": default_orders})
 
     orders = decide_glassbox(weeks) if mode == "glassbox" else decide_blackbox(weeks)
+    orders = {k: max(0, int(v)) for k, v in orders.items()}
     return JSONResponse({"orders": orders})
