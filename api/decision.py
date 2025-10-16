@@ -6,8 +6,8 @@ import math
 app = FastAPI()
 
 STUDENT_EMAIL = "dmdere@taltech.ee"
-ALGO_NAME = "BeerBot_Ultra_v3_2_Deterministic"
-VERSION = "v3.2"
+ALGO_NAME = "BeerBot_Ultra_v3_3_MaxDet"
+VERSION = "v3.3"
 
 ROLES = ["retailer", "wholesaler", "distributor", "factory"]
 ROLE_LEADTIME = {"retailer": 1.4, "wholesaler": 2.2, "distributor": 2.7, "factory": 3.1}
@@ -30,6 +30,18 @@ def ema(xs: List[float], alpha: float, default: float = 10.0) -> float:
     for x in xs[1:]:
         v = alpha * x + (1 - alpha) * v
     return v
+
+def holt_linear(xs: List[float], alpha: float, gamma: float, default: float = 10.0) -> float:
+    """Holt's linear (no seasonality). Returns 1-step-ahead forecast."""
+    if not xs:
+        return default
+    l = xs[0]
+    b = xs[1] - xs[0] if len(xs) > 1 else 0.0
+    for x in xs:
+        l_new = alpha * x + (1 - alpha) * (l + b)
+        b_new = gamma * (l_new - l) + (1 - gamma) * b
+        l, b = l_new, b_new
+    return l + b
 
 def rolling_std(xs: List[float]) -> float:
     n = len(xs)
@@ -114,62 +126,66 @@ def order_for(role: str,
     back = back_hist[-1]
     in_orders = vec(weeks, role, "incoming_orders")
 
-    # forecast with stronger global anchor
+    # Forecast: strong global anchor + Holt's linear for local series
     anchor = demand_anchor(weeks)
-    f_local_s = ema(in_orders[-6:], 0.55, anchor)
+    holt = holt_linear(in_orders[-12:], alpha=0.55, gamma=0.15, default=anchor)
+    f_local_s = ema(in_orders[-6:], 0.55, holt)
     f_local_l = ema(in_orders[-14:], 0.25, f_local_s)
-    forecast = 0.72 * anchor + 0.28 * (0.6 * f_local_s + 0.4 * f_local_l)
+    local_mix = 0.6 * f_local_s + 0.4 * f_local_l
+    forecast = 0.75 * anchor + 0.25 * local_mix
     forecast = max(4.0, forecast)
 
-    # variance- and cost-aware safety
+    # Safety: variance- and cost-aware
     win = in_orders[-10:]
     sig = rolling_std(win)
     cost_ratio = back_unit / max(1e-6, inv_unit)
     safety = (0.18 * forecast + 0.55 * sig) * clamp(cost_ratio, 0.7, 2.2)
 
-    # trend moderation
+    # Trend moderation
     tr = slope(in_orders[-8:])
     trend_factor = 1.0 + clamp(tr / max(1.0, forecast), -0.25, 0.25)
 
-    # horizon drain
+    # Stronger end-of-horizon drain (last 6 weeks)
     if weeks_total:
         left = max(0, weeks_total - len(weeks))
         if left < L + 3:
             shrink = clamp((L + 3 - left) / (L + 3), 0.0, 1.0)
             trend_factor *= (1.0 - 0.55 * shrink)
             safety *= (1.0 - 0.80 * shrink)
-        if left < 5:
-            shrink2 = (5 - left) / 5.0
-            trend_factor *= (1.0 - 0.65 * shrink2)
-            safety *= (1.0 - 0.85 * shrink2)
+        if left < 6:
+            shrink2 = (6 - left) / 6.0
+            trend_factor *= (1.0 - 0.70 * shrink2)
+            safety *= (1.0 - 0.88 * shrink2)
 
-    # target position with pipeline
+    # Target position with pipeline
     pipe = pipeline_estimate(weeks, role, L)
     target_pos = trend_factor * (L * forecast) + safety
     inv_pos = inv + pipe - back
 
     base = forecast + (target_pos - inv_pos) / max(1.0, L)
 
-    # PI backlog controller with capped proportional term
-    kp = 0.42
-    ki = 0.06
+    # Adaptive PI backlog controller (deterministic)
+    # P is capped, Kp grows with backlog via smooth factor; Ki from history
+    gain_boost = 1 / (1 + math.exp(- (back - 40) / 12))  # 0..1
+    kp = 0.38 + 0.08 * gain_boost
+    ki = 0.055
     integ = integral_from_history(back_hist)
-    p_term = kp * min(back, 60.0)
+    p_term = kp * min(back, 55.0)
     ctrl = p_term + ki * integ
 
     raw = base + ctrl
 
-    # phase-aware step cap
+    # Phase-aware step cap (tighter mid-horizon)
     prev = in_orders[-1] if in_orders else forecast
     vol = max(6.0, forecast + 0.8 * sig)
     phase = len(weeks) / max(1.0, (weeks_total or 36))
-    base_cap = 0.18 if 0.35 < phase < 0.80 else 0.20
+    base_cap = 0.17 if 0.35 < phase < 0.80 else 0.20
     step_cap = (base_cap - 0.05 * clamp(abs(tr) / max(1.0, forecast), 0, 1)) * vol
     damped = prev + clamp(raw - prev, -step_cap, step_cap)
 
-    # tighter dynamic bounds
-    lo = max(4.0, 0.58 * anchor)
-    hi = max(lo + 2.0, 1.42 * anchor + 0.33 * sig + 0.28 * back / max(1.0, L))
+    # Tighter dynamic bounds (anti-bullwhip)
+    lo = max(4.0, 0.60 * anchor)
+    hi = max(lo + 2.0, 1.36 * anchor + 0.28 * sig + 0.24 * back / max(1.0, L))
 
     order = int(clamp(fround(damped), fround(lo), fround(hi)))
     return order
