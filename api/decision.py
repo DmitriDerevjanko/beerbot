@@ -6,8 +6,8 @@ import math
 app = FastAPI()
 
 STUDENT_EMAIL = "dmdere@taltech.ee"
-ALGO_NAME = "BeerBot_Ultra_v3_1_Deterministic"
-VERSION = "v3.1"
+ALGO_NAME = "BeerBot_Ultra_v3_2_Deterministic"
+VERSION = "v3.2"
 
 ROLES = ["retailer", "wholesaler", "distributor", "factory"]
 ROLE_LEADTIME = {"retailer": 1.4, "wholesaler": 2.2, "distributor": 2.7, "factory": 3.1}
@@ -91,11 +91,10 @@ def demand_anchor(weeks: List[Dict[str, Any]]) -> float:
 def pipeline_estimate(weeks: List[Dict[str, Any]], role: str, L: float) -> float:
     arr = vec(weeks, role, "arriving_shipments")
     k = max(1, int(math.ceil(L)))
-    # fixed weight keeps determinism and avoids double counting
-    return sum(arr[-k:]) * 0.8
+    weight = 0.9 if role == "factory" else 0.8
+    return sum(arr[-k:]) * weight
 
 def integral_from_history(back_hist: List[float], decay: float = 0.92) -> float:
-    # leaky integral computed from history only (no mutable globals)
     s = 0.0
     for b in back_hist:
         s = decay * s + b
@@ -115,48 +114,62 @@ def order_for(role: str,
     back = back_hist[-1]
     in_orders = vec(weeks, role, "incoming_orders")
 
+    # forecast with stronger global anchor
     anchor = demand_anchor(weeks)
     f_local_s = ema(in_orders[-6:], 0.55, anchor)
     f_local_l = ema(in_orders[-14:], 0.25, f_local_s)
-    forecast = 0.55 * anchor + 0.45 * (0.6 * f_local_s + 0.4 * f_local_l)
+    forecast = 0.72 * anchor + 0.28 * (0.6 * f_local_s + 0.4 * f_local_l)
     forecast = max(4.0, forecast)
 
+    # variance- and cost-aware safety
     win = in_orders[-10:]
     sig = rolling_std(win)
     cost_ratio = back_unit / max(1e-6, inv_unit)
-    safety = (0.22 * forecast + 0.65 * sig) * clamp(cost_ratio, 0.7, 2.2)
+    safety = (0.18 * forecast + 0.55 * sig) * clamp(cost_ratio, 0.7, 2.2)
 
+    # trend moderation
     tr = slope(in_orders[-8:])
     trend_factor = 1.0 + clamp(tr / max(1.0, forecast), -0.25, 0.25)
 
+    # horizon drain
     if weeks_total:
         left = max(0, weeks_total - len(weeks))
         if left < L + 3:
             shrink = clamp((L + 3 - left) / (L + 3), 0.0, 1.0)
             trend_factor *= (1.0 - 0.55 * shrink)
-            safety *= (1.0 - 0.8 * shrink)
+            safety *= (1.0 - 0.80 * shrink)
+        if left < 5:
+            shrink2 = (5 - left) / 5.0
+            trend_factor *= (1.0 - 0.65 * shrink2)
+            safety *= (1.0 - 0.85 * shrink2)
 
+    # target position with pipeline
     pipe = pipeline_estimate(weeks, role, L)
     target_pos = trend_factor * (L * forecast) + safety
     inv_pos = inv + pipe - back
 
     base = forecast + (target_pos - inv_pos) / max(1.0, L)
 
-    # PI control from history (deterministic)
+    # PI backlog controller with capped proportional term
     kp = 0.42
     ki = 0.06
     integ = integral_from_history(back_hist)
-    ctrl = kp * back + ki * integ
+    p_term = kp * min(back, 60.0)
+    ctrl = p_term + ki * integ
 
     raw = base + ctrl
 
+    # phase-aware step cap
     prev = in_orders[-1] if in_orders else forecast
     vol = max(6.0, forecast + 0.8 * sig)
-    step_cap = (0.19 - 0.05 * clamp(abs(tr) / max(1.0, forecast), 0, 1)) * vol
+    phase = len(weeks) / max(1.0, (weeks_total or 36))
+    base_cap = 0.18 if 0.35 < phase < 0.80 else 0.20
+    step_cap = (base_cap - 0.05 * clamp(abs(tr) / max(1.0, forecast), 0, 1)) * vol
     damped = prev + clamp(raw - prev, -step_cap, step_cap)
 
-    lo = max(4.0, 0.55 * anchor)
-    hi = max(lo + 2.0, 1.50 * anchor + 0.40 * sig + 0.32 * back / max(1.0, L))
+    # tighter dynamic bounds
+    lo = max(4.0, 0.58 * anchor)
+    hi = max(lo + 2.0, 1.42 * anchor + 0.33 * sig + 0.28 * back / max(1.0, L))
 
     order = int(clamp(fround(damped), fround(lo), fround(hi)))
     return order
