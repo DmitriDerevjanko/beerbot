@@ -5,18 +5,31 @@ from typing import Dict, Any, List
 app = FastAPI()
 
 STUDENT_EMAIL = "dmdere@taltech.ee"
-ALGO_NAME = "NaiveBeerBot_Improved"
-VERSION = "v1.1"
+ALGO_NAME = "NaiveBeerBot_OrderUpTo"
+VERSION = "v1.2"
 
 ROLES = ["retailer", "wholesaler", "distributor", "factory"]
 DEFAULT_INV_COST = 1.0
 DEFAULT_BACKLOG_COST = 2.0
 
-
+# --- helpers ---
 def clamp(x: float, lo: float, hi: float) -> float:
-    """Ограничивает значение между нижним и верхним порогом"""
     return max(lo, min(hi, x))
 
+def ema(series: List[float], alpha: float = 0.4, default: float = 10.0) -> float:
+    if not series:
+        return default
+    v = series[0]
+    for x in series[1:]:
+        v = alpha * x + (1 - alpha) * v
+    return v
+
+def last_series(weeks: List[Dict[str, Any]], role: str, key: str) -> List[float]:
+    out = []
+    for w in weeks:
+        st = w.get("roles", {}).get(role, {})
+        out.append(float(st.get(key, 0)))
+    return out
 
 def compute_metrics(weeks: List[Dict[str, Any]], inv_cost=DEFAULT_INV_COST, backlog_cost=DEFAULT_BACKLOG_COST):
     inv_sum = 0.0
@@ -43,40 +56,50 @@ def compute_metrics(weeks: List[Dict[str, Any]], inv_cost=DEFAULT_INV_COST, back
         "peak_backlog": int(peak_back),
     }
 
-
+# --- core policy: order-up-to with EMA forecast ---
 def smart_order(role: str, weeks: List[Dict[str, Any]]) -> int:
-    """Улучшённая логика заказа"""
-    if len(weeks) < 1:
+    # Параметры (можно тюнить)
+    L = 3.0          # оценка совокупного lead time в неделях
+    ALPHA = 0.45     # EMA для прогноза спроса
+    BETA = 0.35      # доля safety stock от прогноза
+    MIN_O, MAX_O = 4, 28
+    DAMP = 0.25      # мягкое демпфирование (ограничивает шаг)
+
+    if not weeks:
         return 10
 
-    last = weeks[-1]["roles"][role]
-    incoming = last["incoming_orders"]
-    backlog = last["backlog"]
-    inventory = last["inventory"]
+    inv_hist = last_series(weeks, role, "inventory")
+    back_hist = last_series(weeks, role, "backlog")
+    inord_hist = last_series(weeks, role, "incoming_orders")
 
-    # Базовый заказ — как у наивного
-    base = incoming
+    inv = inv_hist[-1]
+    back = back_hist[-1]
 
-    # Добавляем компенсацию backlog
-    compensation = 0.4 * backlog  # можно отрегулировать
+    # Прогноз спроса на неделю вперёд
+    forecast = ema(inord_hist[-6:], alpha=ALPHA, default=10.0)
 
-    # Амортизируем (сглаживаем)
-    smooth = (inventory * 0.1)
+    # Целевая позиция и текущая позиция
+    safety = BETA * forecast
+    target_pos = L * forecast + safety
+    inv_pos = inv - back  # approx без pipeline
 
-    # Итог
-    order = base + compensation - smooth
+    # Сырая рекомендация заказа
+    raw = forecast + (target_pos - inv_pos) / max(1.0, L)
 
-    # Ограничиваем
-    return int(clamp(order, 4, 30))
+    # Демпфирование: не даём прыгать > DAMP * forecast за раз
+    # В качестве предыдущего заказа берём последнюю входящую как прокси,
+    # чтобы не зависеть от наличия истории наших заказов.
+    prev_proxy = inord_hist[-1]
+    max_step = DAMP * max(6.0, forecast)
+    ordered = prev_proxy + clamp(raw - prev_proxy, -max_step, max_step)
 
+    return int(clamp(ordered, MIN_O, MAX_O))
 
 def decide_blackbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
     return {r: smart_order(r, weeks) for r in ROLES}
 
-
 def decide_glassbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
     return decide_blackbox(weeks)
-
 
 @app.post("/api/decision")
 async def decision(req: Request):
@@ -88,13 +111,12 @@ async def decision(req: Request):
             "algorithm_name": ALGO_NAME,
             "version": VERSION,
             "supports": {"blackbox": True, "glassbox": True},
-            "message": "NaiveBeerBot_Improved ready"
+            "message": "OrderUpTo EMA policy ready"
         })
 
     weeks = body.get("weeks", [])
     if not weeks:
-        default = {r: 10 for r in ROLES}
-        return JSONResponse({"orders": default})
+        return JSONResponse({"orders": {r: 10 for r in ROLES}})
 
     mode = body.get("mode", "blackbox").lower()
     orders = decide_glassbox(weeks) if mode == "glassbox" else decide_blackbox(weeks)
