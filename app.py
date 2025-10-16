@@ -1,110 +1,79 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from typing import Dict, Any, List
-import math
 
 app = FastAPI()
 
 STUDENT_EMAIL = "dmdere@taltech.ee"
-ALGO_NAME = "BeerBot_PRO_Predictive"
-VERSION = "v2.0.0"
+ALGO_NAME = "BeerBot_Elite_AdaptivePredictive"
+VERSION = "v3.0.0"
 
+# === Utilities ===
+def moving_avg(values: List[int], window=3):
+    vals = values[-window:] if len(values) >= window else values
+    return sum(vals) / len(vals) if vals else 0
 
-# === UTILITIES ===
-def moving_avg(values: List[int], window: int = 3) -> float:
-    if not values:
-        return 0.0
-    use = values[-window:] if len(values) >= window else values
-    return sum(use) / len(use)
-
-
-def trend_factor(values: List[int]) -> float:
-    """Detect demand trend: + if growing, - if shrinking."""
+def trend(values: List[int]) -> float:
     if len(values) < 3:
-        return 0.0
+        return 0
     a, b, c = values[-3:]
-    if a == 0:
-        return 0.0
-    return ((b + c) / 2 - a) / max(a, 1)  # relative trend (% change)
+    return ((b + c) / 2 - a) / max(a, 1)
 
+def volatility(values: List[int]) -> float:
+    if len(values) < 3:
+        return 0
+    avg = moving_avg(values, 3)
+    return sum(abs(v - avg) for v in values[-3:]) / (avg + 1e-6)
 
-def clamp(x: float, lo: float, hi: float) -> float:
-    return max(lo, min(hi, x))
+def clamp(x, lo, hi): return max(lo, min(hi, x))
+def as_int(x): return int(round(x)) if x > 0 else 0
 
-
-def as_int_nonneg(x: float) -> int:
-    return int(round(x)) if x > 0 else 0
-
-
-def get_state(week_obj: Dict[str, Any], role: str) -> Dict[str, int]:
-    return week_obj["roles"][role]
-
-
-def get_incoming(weeks: List[Dict[str, Any]], role: str) -> List[int]:
-    return [int(get_state(w, role)["incoming_orders"]) for w in weeks]
-
-
-def get_prev_order(weeks: List[Dict[str, Any]], role: str) -> int:
-    if len(weeks) >= 2:
-        return int(weeks[-2]["orders"][role])
+def get_state(w, r): return w["roles"][r]
+def incoming_series(weeks, role): return [get_state(w, role)["incoming_orders"] for w in weeks]
+def prev_order(weeks, role): 
+    if len(weeks) >= 2: return weeks[-2]["orders"][role]
     return 10
 
-
-# === CORE DECISION ===
-def decide_predictive(weeks: List[Dict[str, Any]], role: str) -> int:
+# === Decision core ===
+def decide_elite(weeks, role):
     last = get_state(weeks[-1], role)
-    inv, back = int(last["inventory"]), int(last["backlog"])
-    incoming = get_incoming(weeks, role)
-    avg_demand = moving_avg(incoming, 3)
-    prev_order = get_prev_order(weeks, role)
+    inv, back = last["inventory"], last["backlog"]
+    inc = incoming_series(weeks, role)
+    avg_demand = moving_avg(inc, 3)
+    tr = trend(inc)
+    vol = volatility(inc)
+    prev = prev_order(weeks, role)
 
-    # --- Trend analysis ---
-    tr = trend_factor(incoming)
-    trend_adj = clamp(tr * 0.5, -0.3, 0.3)  # -30%...+30%
+    # Forecast next demand
+    forecast = avg_demand * (1 + clamp(tr * 0.7, -0.3, 0.4))
 
-    # --- Adaptive target ---
-    target_stock = max(3, avg_demand * (1.1 + trend_adj))
-    error = target_stock - inv
+    # Dynamic safety stock (reduces when demand stable)
+    safety = (1.0 + min(vol, 0.5)) * forecast
 
-    # --- Base PI control ---
-    base_order = avg_demand + (back * 0.8) + (0.5 * error)
+    # Adaptive gain: stronger when backlog high
+    gain = 0.4 + clamp(back / 15, 0, 0.3)
 
-    # --- Damping (momentum smoothing) ---
-    damping = 0.4 if abs(error) < 5 else 0.6
-    smoothed = prev_order + damping * (base_order - prev_order)
+    # Error control
+    error = safety - inv
+    base_order = forecast + back * 0.8 + gain * error
 
-    # --- Clamp change per week (prevent shocks) ---
-    limited = clamp(smoothed, prev_order - 5, prev_order + 5)
+    # Anti-overshoot: slow decrease if inventory >> target
+    if inv > 1.5 * safety:
+        base_order *= 0.7
 
-    return as_int_nonneg(limited)
+    # Smooth momentum
+    damping = 0.5 if back > 5 else 0.35
+    new_order = prev + damping * (base_order - prev)
+    new_order = clamp(new_order, prev - 3, prev + 3)
+    return as_int(new_order)
 
-
-# === ROLES ===
-def decide_blackbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
+def decide_blackbox(weeks):
     roles = ["retailer", "wholesaler", "distributor", "factory"]
-    return {r: decide_predictive(weeks, r) for r in roles}
+    return {r: decide_elite(weeks, r) for r in roles}
 
-
-def decide_glassbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
-    r_in, w_in, d_in = (
-        get_incoming(weeks, x) for x in ["retailer", "wholesaler", "distributor"]
-    )
-    last = weeks[-1]
-    r, w, d, f = (get_state(last, x) for x in ["retailer", "wholesaler", "distributor", "factory"])
-
-    return {
-        "retailer": decide_predictive(weeks, "retailer"),
-        "wholesaler": decide_predictive(weeks, "wholesaler"),
-        "distributor": decide_predictive(weeks, "distributor"),
-        "factory": decide_predictive(weeks, "factory"),
-    }
-
-
-# === API ===
 @app.post("/api/decision")
 async def decision(req: Request):
     body = await req.json()
-
     if body.get("handshake"):
         return JSONResponse({
             "ok": True,
@@ -114,11 +83,7 @@ async def decision(req: Request):
             "supports": {"blackbox": True, "glassbox": True},
             "message": "BeerBot ready"
         })
-
     weeks = body.get("weeks", [])
-    mode = body.get("mode", "blackbox")
     if not weeks:
-        return JSONResponse({"orders": {"retailer": 10, "wholesaler": 10, "distributor": 10, "factory": 10}})
-
-    orders = decide_glassbox(weeks) if mode == "glassbox" else decide_blackbox(weeks)
-    return JSONResponse({"orders": orders})
+        return JSONResponse({"orders": {r: 10 for r in ["retailer","wholesaler","distributor","factory"]}})
+    return JSONResponse({"orders": decide_blackbox(weeks)})
