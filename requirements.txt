@@ -2,17 +2,12 @@
 fastapi==0.115.0
 uvicorn==0.30.1
 
-# --- Data Processing ---
+# --- Data processing ---
 pandas==2.2.2
 numpy==1.26.4
 
-# --- Visualization & Analysis ---
+# --- Visualization & analysis (optional) ---
 matplotlib==3.9.2
 seaborn==0.13.2
 tabulate==0.9.0
 rich==13.7.1
-
-# --- Utilities ---
-copy
-json
-random
