@@ -1,135 +1,77 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from typing import Dict, Any, List, Tuple
-import math
+from typing import Dict, Any, List
 
 app = FastAPI()
 
 STUDENT_EMAIL = "dmdere@taltech.ee"
-ALGO_NAME = "BeerBot_v8_Cooperative"
-VERSION = "v8.0.0"
+ALGO_NAME = "BeerBot_Ultra_CostAware"
+VERSION = "v4.0.0"
 
-ROLES = ["retailer", "wholesaler", "distributor", "factory"]
-ROLE_UP = {"retailer": None, "wholesaler": "retailer", "distributor": "wholesaler", "factory": "distributor"}
-LEAD = 2
+def moving_avg(values: List[int], window=3):
+    vals = values[-window:] if len(values) >= window else values
+    return sum(vals) / len(vals) if vals else 0
 
-def clamp(x: float, lo: float, hi: float) -> float:
-    return lo if x < lo else hi if x > hi else x
+def linear_trend(values: List[int]) -> float:
+    """Approximate linear trend (slope) for last 4 points."""
+    if len(values) < 4:
+        return 0.0
+    n = 4
+    x = list(range(n))
+    y = values[-n:]
+    avg_x, avg_y = sum(x)/n, sum(y)/n
+    num = sum((xi-avg_x)*(yi-avg_y) for xi, yi in zip(x,y))
+    den = sum((xi-avg_x)**2 for xi in x)
+    return num / den if den else 0.0
 
-def ema(y: List[float], alpha: float) -> float:
-    if not y: return 0.0
-    v = float(y[0])
-    for x in y[1:]:
-        v = alpha * float(x) + (1 - alpha) * v
-    return v
+def clamp(x, lo, hi): return max(lo, min(hi, x))
+def as_int(x): return int(round(x)) if x > 0 else 0
 
-def holt(y: List[float], a: float = 0.45, b: float = 0.2) -> Tuple[float, float]:
-    if not y: return 0.0, 0.0
-    L, T = float(y[0]), 0.0
-    for x in y[1:]:
-        prev_L = L
-        L = a * float(x) + (1 - a) * (L + T)
-        T = b * (L - prev_L) + (1 - b) * T
-    return L, T
-
-def mean_std(y: List[float], w: int = 6) -> Tuple[float, float]:
-    if not y: return 0.0, 0.0
-    t = y[-w:] if len(y) >= w else y
-    m = sum(t) / len(t)
-    s = math.sqrt(sum((v - m) ** 2 for v in t) / len(t))
-    return m, s
-
-def cusum(y: List[int], k: float = 0.22) -> Tuple[bool, bool]:
-    if len(y) < 6: return False, False
-    l3 = sum(y[-3:]) / 3.0
-    p3 = sum(y[-6:-3]) / 3.0
-    if p3 <= 0: return False, False
-    return l3 > p3 * (1 + k), l3 < p3 * (1 - k)
-
-def incoming_series(weeks: List[Dict[str, Any]], role: str) -> List[int]:
-    return [int(weeks[i]["roles"][role]["incoming_orders"]) for i in range(len(weeks))]
-
-def prev_order(weeks: List[Dict[str, Any]], role: str) -> int:
-    if len(weeks) >= 2: return int(weeks[-2]["orders"][role])
+def get_state(week, role): return week["roles"][role]
+def incoming_series(weeks, role): return [get_state(w, role)["incoming_orders"] for w in weeks]
+def prev_order(weeks, role): 
+    if len(weeks) >= 2: return weeks[-2]["orders"][role]
     return 10
 
-def global_totals(last_roles: Dict[str, Dict[str, int]]) -> Tuple[int, int]:
-    inv = sum(int(last_roles[r]["inventory"]) for r in ROLES)
-    back = sum(int(last_roles[r]["backlog"]) for r in ROLES)
-    return inv, back
-
-def supply_line(weeks: List[Dict[str, Any]], role: str, L: int = LEAD) -> int:
-    s = 0
-    for lag in range(1, L + 1):
-        idx = len(weeks) - 1 - lag
-        if idx >= 0:
-            s += int(weeks[idx]["orders"][role])
-    return s
-
-def choose_policy(vol: float, spike_up: bool, drop_dn: bool) -> Dict[str, float]:
-    if spike_up:
-        return dict(b=0.40, kI=0.60, kP=0.30, kB=0.60, up=10, down=6, coop=0.10)
-    if drop_dn:
-        return dict(b=0.35, kI=0.55, kP=0.25, kB=0.25, up=8,  down=7, coop=0.08)
-    if vol > 0.35:
-        return dict(b=0.42, kI=0.58, kP=0.28, kB=0.45, up=9,  down=6, coop=0.09)
-    return dict(b=0.38, kI=0.52, kP=0.24, kB=0.35, up=8,  down=5, coop=0.07)
-
-def decide_one(weeks: List[Dict[str, Any]], role: str, mode: str) -> int:
-    last_roles = weeks[-1]["roles"]
-    inv = int(last_roles[role]["inventory"])
-    back = int(last_roles[role]["backlog"])
+def decide_ultra(weeks, role):
+    last = get_state(weeks[-1], role)
+    inv, back = last["inventory"], last["backlog"]
+    inc = incoming_series(weeks, role)
+    avg_demand = moving_avg(inc, 3)
     prev = prev_order(weeks, role)
 
-    src_role = role
-    if mode == "glassbox" and ROLE_UP[role] is not None:
-        src_role = ROLE_UP[role]
+    # --- Trend forecasting ---
+    slope = linear_trend(inc)
+    forecast = avg_demand + slope * 0.5
+    forecast = max(0, forecast)
 
-    inc = incoming_series(weeks, src_role)
-    Ls, Ts = holt([float(x) for x in inc], 0.5, 0.22)
-    D_hat = max(0.0, Ls + Ts)
+    # --- Dynamic safety stock ---
+    volatility = sum(abs(inc[-i] - avg_demand) for i in range(1, min(3, len(inc))) )
+    stability_factor = 1.0 - clamp(volatility / (avg_demand + 1e-6), 0, 0.5)
+    safety_stock = avg_demand * (0.9 + 0.2 * stability_factor)
 
-    mean6, std6 = mean_std([float(x) for x in inc], 6)
-    vol = clamp(std6 / (mean6 + 1e-6), 0.0, 1.5)
-    spike_up, drop_dn = cusum(inc, 0.25)
+    # --- Cost-aware correction ---
+    backlog_weight = 1.0 if back > 5 else 0.6
+    inventory_penalty = 0.3 if inv > 1.2 * safety_stock else 0.5
+    correction = (safety_stock - inv) * inventory_penalty + back * backlog_weight
 
-    params = choose_policy(vol, spike_up, drop_dn)
-    b, kI, kP, kB = params["b"], params["kI"], params["kP"], params["kB"]
-    up_cap, down_cap, kCoop = params["up"], params["down"], params["coop"]
+    # --- Base order ---
+    base_order = forecast + correction
+    base_order = max(base_order, avg_demand * 0.5)
 
-    pipe_now = supply_line(weeks, role, LEAD)
-    inv_pos = inv - back + pipe_now
+    # --- Anti-overshoot & damping ---
+    if inv > 1.5 * safety_stock:
+        base_order *= 0.7
+    damping = 0.35 if inv > safety_stock else 0.55
+    order = prev + damping * (base_order - prev)
 
-    S_pipe = LEAD * D_hat + 0.6 * min(back, D_hat * LEAD)
-    S_invpos = b * D_hat
+    # --- Clamp weekly change ---
+    order = clamp(order, prev - 2, prev + 2)
+    return as_int(order)
 
-    g_inv, g_back = global_totals(last_roles)
-    coop_term = kCoop * (g_back - 0.6 * g_inv) / max(1.0, len(ROLES))
-
-    order_raw = (
-        D_hat
-        + kI * (S_invpos - inv_pos)
-        + kP * (S_pipe - pipe_now)
-        + kB * back
-        + coop_term
-    )
-
-    if inv_pos > (S_invpos + 0.35 * S_pipe): order_raw *= 0.80
-    if back > D_hat * 0.8: order_raw *= 1.12
-
-    delta = order_raw - prev
-    if   delta >  up_cap:   order = prev + up_cap
-    elif delta < -down_cap: order = prev - down_cap
-    else:                   order = order_raw
-
-    if back > 0 and order < D_hat: order = D_hat
-    return int(max(0, round(order)))
-
-def decide_blackbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
-    return {r: decide_one(weeks, r, mode="blackbox") for r in ROLES}
-
-def decide_glassbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
-    return {r: decide_one(weeks, r, mode="glassbox") for r in ROLES}
+def decide_blackbox(weeks):
+    roles = ["retailer", "wholesaler", "distributor", "factory"]
+    return {r: decide_ultra(weeks, r) for r in roles}
 
 @app.post("/api/decision")
 async def decision(req: Request):
@@ -144,8 +86,6 @@ async def decision(req: Request):
             "message": "BeerBot ready"
         })
     weeks = body.get("weeks", [])
-    mode = body.get("mode", "blackbox")
     if not weeks:
-        return JSONResponse({"orders": {r: 10 for r in ROLES}})
-    orders = decide_glassbox(weeks) if mode == "glassbox" else decide_blackbox(weeks)
-    return JSONResponse({"orders": orders})
+        return JSONResponse({"orders": {r: 10 for r in ["retailer","wholesaler","distributor","factory"]}})
+    return JSONResponse({"orders": decide_blackbox(weeks)})
