@@ -5,8 +5,8 @@ from typing import Dict, Any, List
 app = FastAPI()
 
 STUDENT_EMAIL = "dmdere@taltech.ee"
-ALGO_NAME = "BeerBot"
-VERSION = "main"
+ALGO_NAME = "BeerBot_Ultra_CostAware"
+VERSION = "v6.0"
 
 # --------------------- Helper Functions ---------------------
 def clamp(x: float, lo: float, hi: float) -> float:
@@ -36,24 +36,11 @@ def prev_order(weeks: List[Dict[str, Any]], role: str) -> int:
         return int(weeks[-2]["orders"][role])
     return 10
 
-# --------------------- APIOBPCS+ Core Logic ---------------------
+# --------------------- APIOBPCS+ Ultra Logic ---------------------
 def decide_beerbot(weeks: List[Dict[str, Any]], role: str) -> int:
     """
-    APIOBPCS+ (Adaptive Pipeline & Inventory Order-Based Production Control System)
-
-    Formula:
-        order = D_hat
-                + k_I * (S_invpos - inv_position)
-                + k_P * (S_pipe   - pipe_est)
-                + k_B * backlog
-
-    where:
-        D_hat        — exponentially smoothed demand (EMA)
-        inv_position — inventory position = inventory - backlog + pipeline_est
-        pipe_est     — pipeline estimate (sum of last L orders)
-        S_invpos     — target inventory position
-        S_pipe       — target pipeline (≈ L * D_hat)
-        k_I, k_P, k_B — control coefficients (adaptive)
+    BeerBot Ultra Cost-Aware v6.0
+    Advanced APIOBPCS+ with momentum damping, adaptive backlog control, and demand momentum.
     """
     last = weeks[-1]["roles"][role]
     inv  = int(last["inventory"])
@@ -64,36 +51,40 @@ def decide_beerbot(weeks: List[Dict[str, Any]], role: str) -> int:
     # --- Typical logistics delay (2 weeks in the MIT Beer Game)
     L = 2
 
-    # --- Base parameters (adapt dynamically later)
-    b_base = 0.80          # Base safety factor (fraction of demand)
-    k_I    = 0.40          # Inventory correction
-    k_P    = 0.22          # Pipeline correction
-    k_B    = 0.12          # Backlog correction (soft)
-    up_step_max   = 6      # Max upward step per week
-    down_step_max = 4      # Max downward step per week
+    # --- Base parameters
+    b_base = 0.80
+    k_I    = 0.35      # slightly reduced inventory correction
+    k_P    = 0.22
+    k_B    = 0.12
+    up_step_max   = 6
+    down_step_max = 4
 
-    # --- Volatility detection (based on last 3 demand points)
+    # --- Volatility detection
     if len(inc) >= 3:
         avg3 = sum(inc[-3:]) / 3
         vol = sum(abs(x - avg3) for x in inc[-3:]) / (avg3 + 1e-6)
     else:
         vol = 0.0
 
-    # --- Event detection: demand spikes or drops
-    spike_up = False
-    drop_dn  = False
+    # --- Demand trend detection
     if len(inc) >= 6:
         last3 = sum(inc[-3:]) / 3
         prev3 = sum(inc[-6:-3]) / 3
-        if prev3 > 0:
-            if last3 > prev3 * 1.20:   # demand increased >20% in 3 weeks
-                spike_up = True
-            if last3 < prev3 * 0.85:   # demand dropped >15% in 3 weeks
-                drop_dn = True
+        spike_up = last3 > prev3 * 1.20
+        drop_dn  = last3 < prev3 * 0.85
+    else:
+        spike_up = drop_dn = False
 
-    # --- Adaptive EMA factor: lower volatility = faster response
-    alpha = clamp(0.25 + 0.25 * (1.0 - clamp(vol, 0.0, 1.0)), 0.20, 0.50)
+    # --- Adaptive EMA (faster response under low volatility)
+    alpha = clamp(0.25 + 0.3 * (1.0 - clamp(vol, 0.0, 1.0)), 0.20, 0.60)
     D_hat = ema(inc, alpha)
+
+    # --- Demand momentum predictor
+    if len(inc) >= 3:
+        trend = (inc[-1] - inc[-3]) / max(inc[-3], 1)
+    else:
+        trend = 0.0
+    D_hat *= (1 + 0.25 * trend)
 
     # --- Estimate the pipeline (sum of last L orders)
     pipe_est = 0
@@ -104,22 +95,27 @@ def decide_beerbot(weeks: List[Dict[str, Any]], role: str) -> int:
 
     # --- Targets
     S_pipe   = L * D_hat
-    safety_r = b_base * (1.0 + 0.5 * clamp(vol, 0.0, 1.0))  # higher volatility → larger safety
+    safety_r = b_base * (1.0 + 0.5 * clamp(vol, 0.0, 1.0))
     S_invpos = max(0.0, safety_r * D_hat)
 
     # --- Event-based adaptation
     if spike_up:
-        # Aggressively push pipeline and backlog to avoid shortage
         k_P *= 1.25
         k_B *= 1.25
         S_pipe *= 1.15
         up_step_max = 7
     if drop_dn:
-        # Faster de-stocking when demand drops
         S_invpos *= 0.80
         S_pipe   *= 0.85
         k_B      *= 0.70
         down_step_max = 5
+
+    # --- Dynamic backlog adaptation
+    if back > D_hat * 1.2:
+        k_B *= 1.5
+        k_P *= 0.9
+    elif back < D_hat * 0.5:
+        k_B *= 0.8
 
     # --- Inventory position
     inv_pos = inv - back + pipe_est
@@ -132,22 +128,26 @@ def decide_beerbot(weeks: List[Dict[str, Any]], role: str) -> int:
         + k_B * back
     )
 
-    # --- Anti-oversupply protection (if stock + pipeline far above target)
+    # --- Anti-oversupply protection
     if inv_pos > (S_invpos + 0.30 * S_pipe) * 1.5:
         order_raw *= 0.75
 
-    # --- Step limits (anti-oscillation smoothing)
+    # --- Step limits
     delta = order_raw - prev
     if   delta >  up_step_max:   order_limited = prev + up_step_max
     elif delta < -down_step_max: order_limited = prev - down_step_max
     else:                        order_limited = order_raw
 
-    # --- Backlog safeguard: never go below demand when backlog exists
-    if back > 0 and order_limited < D_hat:
-        order_limited = D_hat
+    # --- Momentum damping (smooth transition)
+    smooth_factor = 0.35
+    order_final = (1 - smooth_factor) * order_limited + smooth_factor * prev
+
+    # --- Backlog safeguard
+    if back > 0 and order_final < D_hat:
+        order_final = D_hat
 
     # Return non-negative integer order quantity
-    return int(round(order_limited)) if order_limited > 0 else 0
+    return int(round(order_final)) if order_final > 0 else 0
 
 # --------------------- Mode Wrappers ---------------------
 def decide_blackbox(weeks: List[Dict[str, Any]]) -> Dict[str, int]:
