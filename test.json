@@ -1,0 +1,1748 @@
+{
+    "id": "cmgtbiqh5002f14os4o0qwqvh",
+    "botId": "cmgt24xqk000iabveltly4aqj",
+    "mode": "BLACKBOX",
+    "status": "COMPLETED",
+    "version": 10,
+    "totalCost": 39533,
+    "inventoryCost": 4024,
+    "backlogCost": 35509,
+    "privateTotalCost": 39818,
+    "weeklyData": [
+        {
+            "week": 1,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 22,
+                    "in_transit": [
+                        0
+                    ],
+                    "incoming_orders": 7,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 13,
+                    "in_transit": [
+                        10,
+                        0
+                    ],
+                    "incoming_orders": 12,
+                    "arriving_shipments": 10
+                },
+                "wholesaler": {
+                    "backlog": 0,
+                    "inventory": 25,
+                    "in_transit": [
+                        10,
+                        0
+                    ],
+                    "incoming_orders": 9,
+                    "arriving_shipments": 10
+                },
+                "distributor": {
+                    "backlog": 0,
+                    "inventory": 25,
+                    "in_transit": [
+                        10,
+                        0
+                    ],
+                    "incoming_orders": 7,
+                    "arriving_shipments": 10
+                }
+            },
+            "orders": {
+                "factory": 7,
+                "retailer": 9,
+                "wholesaler": 7,
+                "distributor": 7
+            }
+        },
+        {
+            "week": 2,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 21,
+                    "in_transit": [],
+                    "incoming_orders": 6,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 13,
+                    "in_transit": [
+                        0,
+                        9
+                    ],
+                    "incoming_orders": 10,
+                    "arriving_shipments": 10
+                },
+                "wholesaler": {
+                    "backlog": 0,
+                    "inventory": 26,
+                    "in_transit": [
+                        0,
+                        7
+                    ],
+                    "incoming_orders": 8,
+                    "arriving_shipments": 10
+                },
+                "distributor": {
+                    "backlog": 0,
+                    "inventory": 28,
+                    "in_transit": [
+                        0,
+                        7
+                    ],
+                    "incoming_orders": 7,
+                    "arriving_shipments": 10
+                }
+            },
+            "orders": {
+                "factory": 6,
+                "retailer": 8,
+                "wholesaler": 7,
+                "distributor": 6
+            }
+        },
+        {
+            "week": 3,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 20,
+                    "in_transit": [],
+                    "incoming_orders": 5,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 3,
+                    "in_transit": [
+                        9,
+                        8
+                    ],
+                    "incoming_orders": 10,
+                    "arriving_shipments": 0
+                },
+                "wholesaler": {
+                    "backlog": 0,
+                    "inventory": 18,
+                    "in_transit": [
+                        7,
+                        7
+                    ],
+                    "incoming_orders": 8,
+                    "arriving_shipments": 0
+                },
+                "distributor": {
+                    "backlog": 0,
+                    "inventory": 21,
+                    "in_transit": [
+                        7,
+                        6
+                    ],
+                    "incoming_orders": 6,
+                    "arriving_shipments": 0
+                }
+            },
+            "orders": {
+                "factory": 5,
+                "retailer": 8,
+                "wholesaler": 6,
+                "distributor": 5
+            }
+        },
+        {
+            "week": 4,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 20,
+                    "in_transit": [],
+                    "incoming_orders": 5,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 4,
+                    "in_transit": [
+                        8,
+                        8
+                    ],
+                    "incoming_orders": 8,
+                    "arriving_shipments": 9
+                },
+                "wholesaler": {
+                    "backlog": 0,
+                    "inventory": 17,
+                    "in_transit": [
+                        7,
+                        6
+                    ],
+                    "incoming_orders": 7,
+                    "arriving_shipments": 7
+                },
+                "distributor": {
+                    "backlog": 0,
+                    "inventory": 22,
+                    "in_transit": [
+                        6,
+                        5
+                    ],
+                    "incoming_orders": 6,
+                    "arriving_shipments": 7
+                }
+            },
+            "orders": {
+                "factory": 5,
+                "retailer": 7,
+                "wholesaler": 6,
+                "distributor": 5
+            }
+        },
+        {
+            "week": 5,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 20,
+                    "in_transit": [],
+                    "incoming_orders": 5,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 15,
+                    "inventory": 0,
+                    "in_transit": [
+                        8,
+                        7
+                    ],
+                    "incoming_orders": 27,
+                    "arriving_shipments": 8
+                },
+                "wholesaler": {
+                    "backlog": 0,
+                    "inventory": 17,
+                    "in_transit": [
+                        6,
+                        6
+                    ],
+                    "incoming_orders": 10,
+                    "arriving_shipments": 7
+                },
+                "distributor": {
+                    "backlog": 0,
+                    "inventory": 22,
+                    "in_transit": [
+                        5,
+                        5
+                    ],
+                    "incoming_orders": 5,
+                    "arriving_shipments": 6
+                }
+            },
+            "orders": {
+                "factory": 4,
+                "retailer": 10,
+                "wholesaler": 5,
+                "distributor": 5
+            }
+        },
+        {
+            "week": 6,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 19,
+                    "in_transit": [],
+                    "incoming_orders": 4,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 30,
+                    "inventory": 0,
+                    "in_transit": [
+                        7,
+                        10
+                    ],
+                    "incoming_orders": 23,
+                    "arriving_shipments": 8
+                },
+                "wholesaler": {
+                    "backlog": 0,
+                    "inventory": 13,
+                    "in_transit": [
+                        6,
+                        5
+                    ],
+                    "incoming_orders": 14,
+                    "arriving_shipments": 6
+                },
+                "distributor": {
+                    "backlog": 0,
+                    "inventory": 22,
+                    "in_transit": [
+                        5,
+                        5
+                    ],
+                    "incoming_orders": 6,
+                    "arriving_shipments": 5
+                }
+            },
+            "orders": {
+                "factory": 4,
+                "retailer": 14,
+                "wholesaler": 6,
+                "distributor": 4
+            }
+        },
+        {
+            "week": 7,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 19,
+                    "in_transit": [],
+                    "incoming_orders": 4,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 49,
+                    "inventory": 0,
+                    "in_transit": [
+                        10,
+                        14
+                    ],
+                    "incoming_orders": 26,
+                    "arriving_shipments": 7
+                },
+                "wholesaler": {
+                    "backlog": 0,
+                    "inventory": 5,
+                    "in_transit": [
+                        5,
+                        6
+                    ],
+                    "incoming_orders": 19,
+                    "arriving_shipments": 6
+                },
+                "distributor": {
+                    "backlog": 0,
+                    "inventory": 21,
+                    "in_transit": [
+                        5,
+                        4
+                    ],
+                    "incoming_orders": 9,
+                    "arriving_shipments": 5
+                }
+            },
+            "orders": {
+                "factory": 4,
+                "retailer": 19,
+                "wholesaler": 9,
+                "distributor": 4
+            }
+        },
+        {
+            "week": 8,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 20,
+                    "in_transit": [],
+                    "incoming_orders": 5,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 65,
+                    "inventory": 0,
+                    "in_transit": [
+                        14,
+                        10
+                    ],
+                    "incoming_orders": 26,
+                    "arriving_shipments": 10
+                },
+                "wholesaler": {
+                    "backlog": 9,
+                    "inventory": 0,
+                    "in_transit": [
+                        6,
+                        9
+                    ],
+                    "incoming_orders": 24,
+                    "arriving_shipments": 5
+                },
+                "distributor": {
+                    "backlog": 0,
+                    "inventory": 17,
+                    "in_transit": [
+                        4,
+                        4
+                    ],
+                    "incoming_orders": 12,
+                    "arriving_shipments": 5
+                }
+            },
+            "orders": {
+                "factory": 4,
+                "retailer": 24,
+                "wholesaler": 12,
+                "distributor": 5
+            }
+        },
+        {
+            "week": 9,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 21,
+                    "in_transit": [],
+                    "incoming_orders": 6,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 76,
+                    "inventory": 0,
+                    "in_transit": [
+                        10,
+                        6
+                    ],
+                    "incoming_orders": 25,
+                    "arriving_shipments": 14
+                },
+                "wholesaler": {
+                    "backlog": 27,
+                    "inventory": 0,
+                    "in_transit": [
+                        9,
+                        12
+                    ],
+                    "incoming_orders": 30,
+                    "arriving_shipments": 6
+                },
+                "distributor": {
+                    "backlog": 0,
+                    "inventory": 9,
+                    "in_transit": [
+                        4,
+                        5
+                    ],
+                    "incoming_orders": 16,
+                    "arriving_shipments": 4
+                }
+            },
+            "orders": {
+                "factory": 4,
+                "retailer": 30,
+                "wholesaler": 16,
+                "distributor": 6
+            }
+        },
+        {
+            "week": 10,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 24,
+                    "in_transit": [],
+                    "incoming_orders": 9,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 89,
+                    "inventory": 0,
+                    "in_transit": [
+                        6,
+                        9
+                    ],
+                    "incoming_orders": 23,
+                    "arriving_shipments": 10
+                },
+                "wholesaler": {
+                    "backlog": 48,
+                    "inventory": 0,
+                    "in_transit": [
+                        12,
+                        13
+                    ],
+                    "incoming_orders": 36,
+                    "arriving_shipments": 9
+                },
+                "distributor": {
+                    "backlog": 3,
+                    "inventory": 0,
+                    "in_transit": [
+                        5,
+                        6
+                    ],
+                    "incoming_orders": 21,
+                    "arriving_shipments": 4
+                }
+            },
+            "orders": {
+                "factory": 4,
+                "retailer": 36,
+                "wholesaler": 21,
+                "distributor": 9
+            }
+        },
+        {
+            "week": 11,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 28,
+                    "in_transit": [],
+                    "incoming_orders": 13,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 110,
+                    "inventory": 0,
+                    "in_transit": [
+                        9,
+                        12
+                    ],
+                    "incoming_orders": 27,
+                    "arriving_shipments": 6
+                },
+                "wholesaler": {
+                    "backlog": 72,
+                    "inventory": 0,
+                    "in_transit": [
+                        13,
+                        5
+                    ],
+                    "incoming_orders": 43,
+                    "arriving_shipments": 12
+                },
+                "distributor": {
+                    "backlog": 19,
+                    "inventory": 0,
+                    "in_transit": [
+                        6,
+                        9
+                    ],
+                    "incoming_orders": 26,
+                    "arriving_shipments": 5
+                }
+            },
+            "orders": {
+                "factory": 4,
+                "retailer": 43,
+                "wholesaler": 26,
+                "distributor": 13
+            }
+        },
+        {
+            "week": 12,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 32,
+                    "in_transit": [],
+                    "incoming_orders": 17,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 128,
+                    "inventory": 0,
+                    "in_transit": [
+                        12,
+                        13
+                    ],
+                    "incoming_orders": 27,
+                    "arriving_shipments": 9
+                },
+                "wholesaler": {
+                    "backlog": 102,
+                    "inventory": 0,
+                    "in_transit": [
+                        5,
+                        6
+                    ],
+                    "incoming_orders": 50,
+                    "arriving_shipments": 13
+                },
+                "distributor": {
+                    "backlog": 39,
+                    "inventory": 0,
+                    "in_transit": [
+                        9,
+                        13
+                    ],
+                    "incoming_orders": 32,
+                    "arriving_shipments": 6
+                }
+            },
+            "orders": {
+                "factory": 6,
+                "retailer": 50,
+                "wholesaler": 32,
+                "distributor": 17
+            }
+        },
+        {
+            "week": 13,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 37,
+                    "in_transit": [],
+                    "incoming_orders": 22,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 142,
+                    "inventory": 0,
+                    "in_transit": [
+                        13,
+                        5
+                    ],
+                    "incoming_orders": 26,
+                    "arriving_shipments": 12
+                },
+                "wholesaler": {
+                    "backlog": 147,
+                    "inventory": 0,
+                    "in_transit": [
+                        6,
+                        9
+                    ],
+                    "incoming_orders": 58,
+                    "arriving_shipments": 5
+                },
+                "distributor": {
+                    "backlog": 62,
+                    "inventory": 0,
+                    "in_transit": [
+                        13,
+                        17
+                    ],
+                    "incoming_orders": 40,
+                    "arriving_shipments": 9
+                }
+            },
+            "orders": {
+                "factory": 9,
+                "retailer": 58,
+                "wholesaler": 40,
+                "distributor": 22
+            }
+        },
+        {
+            "week": 14,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 43,
+                    "in_transit": [],
+                    "incoming_orders": 28,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 153,
+                    "inventory": 0,
+                    "in_transit": [
+                        5,
+                        6
+                    ],
+                    "incoming_orders": 24,
+                    "arriving_shipments": 13
+                },
+                "wholesaler": {
+                    "backlog": 199,
+                    "inventory": 0,
+                    "in_transit": [
+                        9,
+                        13
+                    ],
+                    "incoming_orders": 66,
+                    "arriving_shipments": 6
+                },
+                "distributor": {
+                    "backlog": 89,
+                    "inventory": 0,
+                    "in_transit": [
+                        17,
+                        22
+                    ],
+                    "incoming_orders": 50,
+                    "arriving_shipments": 13
+                }
+            },
+            "orders": {
+                "factory": 12,
+                "retailer": 66,
+                "wholesaler": 50,
+                "distributor": 28
+            }
+        },
+        {
+            "week": 15,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 50,
+                    "in_transit": [],
+                    "incoming_orders": 35,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 174,
+                    "inventory": 0,
+                    "in_transit": [
+                        6,
+                        9
+                    ],
+                    "incoming_orders": 26,
+                    "arriving_shipments": 5
+                },
+                "wholesaler": {
+                    "backlog": 256,
+                    "inventory": 0,
+                    "in_transit": [
+                        13,
+                        17
+                    ],
+                    "incoming_orders": 75,
+                    "arriving_shipments": 9
+                },
+                "distributor": {
+                    "backlog": 122,
+                    "inventory": 0,
+                    "in_transit": [
+                        22,
+                        28
+                    ],
+                    "incoming_orders": 60,
+                    "arriving_shipments": 17
+                }
+            },
+            "orders": {
+                "factory": 15,
+                "retailer": 75,
+                "wholesaler": 60,
+                "distributor": 35
+            }
+        },
+        {
+            "week": 16,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 58,
+                    "in_transit": [],
+                    "incoming_orders": 43,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 194,
+                    "inventory": 0,
+                    "in_transit": [
+                        9,
+                        13
+                    ],
+                    "incoming_orders": 26,
+                    "arriving_shipments": 6
+                },
+                "wholesaler": {
+                    "backlog": 318,
+                    "inventory": 0,
+                    "in_transit": [
+                        17,
+                        22
+                    ],
+                    "incoming_orders": 84,
+                    "arriving_shipments": 13
+                },
+                "distributor": {
+                    "backlog": 160,
+                    "inventory": 0,
+                    "in_transit": [
+                        28,
+                        35
+                    ],
+                    "incoming_orders": 70,
+                    "arriving_shipments": 22
+                }
+            },
+            "orders": {
+                "factory": 18,
+                "retailer": 84,
+                "wholesaler": 70,
+                "distributor": 43
+            }
+        },
+        {
+            "week": 17,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 68,
+                    "in_transit": [],
+                    "incoming_orders": 53,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 212,
+                    "inventory": 0,
+                    "in_transit": [
+                        13,
+                        17
+                    ],
+                    "incoming_orders": 27,
+                    "arriving_shipments": 9
+                },
+                "wholesaler": {
+                    "backlog": 385,
+                    "inventory": 0,
+                    "in_transit": [
+                        22,
+                        28
+                    ],
+                    "incoming_orders": 94,
+                    "arriving_shipments": 17
+                },
+                "distributor": {
+                    "backlog": 202,
+                    "inventory": 0,
+                    "in_transit": [
+                        35,
+                        43
+                    ],
+                    "incoming_orders": 80,
+                    "arriving_shipments": 28
+                }
+            },
+            "orders": {
+                "factory": 21,
+                "retailer": 94,
+                "wholesaler": 80,
+                "distributor": 53
+            }
+        },
+        {
+            "week": 18,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 78,
+                    "in_transit": [],
+                    "incoming_orders": 63,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 224,
+                    "inventory": 0,
+                    "in_transit": [
+                        17,
+                        22
+                    ],
+                    "incoming_orders": 25,
+                    "arriving_shipments": 13
+                },
+                "wholesaler": {
+                    "backlog": 457,
+                    "inventory": 0,
+                    "in_transit": [
+                        28,
+                        35
+                    ],
+                    "incoming_orders": 104,
+                    "arriving_shipments": 22
+                },
+                "distributor": {
+                    "backlog": 247,
+                    "inventory": 0,
+                    "in_transit": [
+                        43,
+                        53
+                    ],
+                    "incoming_orders": 90,
+                    "arriving_shipments": 35
+                }
+            },
+            "orders": {
+                "factory": 24,
+                "retailer": 104,
+                "wholesaler": 90,
+                "distributor": 63
+            }
+        },
+        {
+            "week": 19,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 88,
+                    "in_transit": [],
+                    "incoming_orders": 73,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 234,
+                    "inventory": 0,
+                    "in_transit": [
+                        22,
+                        28
+                    ],
+                    "incoming_orders": 27,
+                    "arriving_shipments": 17
+                },
+                "wholesaler": {
+                    "backlog": 533,
+                    "inventory": 0,
+                    "in_transit": [
+                        35,
+                        43
+                    ],
+                    "incoming_orders": 114,
+                    "arriving_shipments": 28
+                },
+                "distributor": {
+                    "backlog": 294,
+                    "inventory": 0,
+                    "in_transit": [
+                        53,
+                        63
+                    ],
+                    "incoming_orders": 100,
+                    "arriving_shipments": 43
+                }
+            },
+            "orders": {
+                "factory": 27,
+                "retailer": 114,
+                "wholesaler": 100,
+                "distributor": 73
+            }
+        },
+        {
+            "week": 20,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 98,
+                    "in_transit": [],
+                    "incoming_orders": 83,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 237,
+                    "inventory": 0,
+                    "in_transit": [
+                        28,
+                        35
+                    ],
+                    "incoming_orders": 25,
+                    "arriving_shipments": 22
+                },
+                "wholesaler": {
+                    "backlog": 612,
+                    "inventory": 0,
+                    "in_transit": [
+                        43,
+                        53
+                    ],
+                    "incoming_orders": 124,
+                    "arriving_shipments": 35
+                },
+                "distributor": {
+                    "backlog": 341,
+                    "inventory": 0,
+                    "in_transit": [
+                        63,
+                        73
+                    ],
+                    "incoming_orders": 110,
+                    "arriving_shipments": 53
+                }
+            },
+            "orders": {
+                "factory": 30,
+                "retailer": 124,
+                "wholesaler": 110,
+                "distributor": 83
+            }
+        },
+        {
+            "week": 21,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 108,
+                    "in_transit": [],
+                    "incoming_orders": 93,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 234,
+                    "inventory": 0,
+                    "in_transit": [
+                        35,
+                        43
+                    ],
+                    "incoming_orders": 25,
+                    "arriving_shipments": 28
+                },
+                "wholesaler": {
+                    "backlog": 693,
+                    "inventory": 0,
+                    "in_transit": [
+                        53,
+                        63
+                    ],
+                    "incoming_orders": 134,
+                    "arriving_shipments": 43
+                },
+                "distributor": {
+                    "backlog": 388,
+                    "inventory": 0,
+                    "in_transit": [
+                        73,
+                        83
+                    ],
+                    "incoming_orders": 120,
+                    "arriving_shipments": 63
+                }
+            },
+            "orders": {
+                "factory": 33,
+                "retailer": 134,
+                "wholesaler": 120,
+                "distributor": 93
+            }
+        },
+        {
+            "week": 22,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 118,
+                    "in_transit": [],
+                    "incoming_orders": 103,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 224,
+                    "inventory": 0,
+                    "in_transit": [
+                        43,
+                        53
+                    ],
+                    "incoming_orders": 25,
+                    "arriving_shipments": 35
+                },
+                "wholesaler": {
+                    "backlog": 774,
+                    "inventory": 0,
+                    "in_transit": [
+                        63,
+                        73
+                    ],
+                    "incoming_orders": 144,
+                    "arriving_shipments": 53
+                },
+                "distributor": {
+                    "backlog": 435,
+                    "inventory": 0,
+                    "in_transit": [
+                        83,
+                        93
+                    ],
+                    "incoming_orders": 130,
+                    "arriving_shipments": 73
+                }
+            },
+            "orders": {
+                "factory": 36,
+                "retailer": 144,
+                "wholesaler": 130,
+                "distributor": 103
+            }
+        },
+        {
+            "week": 23,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 128,
+                    "in_transit": [],
+                    "incoming_orders": 113,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 205,
+                    "inventory": 0,
+                    "in_transit": [
+                        53,
+                        63
+                    ],
+                    "incoming_orders": 24,
+                    "arriving_shipments": 43
+                },
+                "wholesaler": {
+                    "backlog": 855,
+                    "inventory": 0,
+                    "in_transit": [
+                        73,
+                        83
+                    ],
+                    "incoming_orders": 154,
+                    "arriving_shipments": 63
+                },
+                "distributor": {
+                    "backlog": 482,
+                    "inventory": 0,
+                    "in_transit": [
+                        93,
+                        103
+                    ],
+                    "incoming_orders": 140,
+                    "arriving_shipments": 83
+                }
+            },
+            "orders": {
+                "factory": 39,
+                "retailer": 154,
+                "wholesaler": 140,
+                "distributor": 113
+            }
+        },
+        {
+            "week": 24,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 138,
+                    "in_transit": [],
+                    "incoming_orders": 123,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 176,
+                    "inventory": 0,
+                    "in_transit": [
+                        63,
+                        73
+                    ],
+                    "incoming_orders": 24,
+                    "arriving_shipments": 53
+                },
+                "wholesaler": {
+                    "backlog": 936,
+                    "inventory": 0,
+                    "in_transit": [
+                        83,
+                        93
+                    ],
+                    "incoming_orders": 153,
+                    "arriving_shipments": 73
+                },
+                "distributor": {
+                    "backlog": 529,
+                    "inventory": 0,
+                    "in_transit": [
+                        103,
+                        113
+                    ],
+                    "incoming_orders": 150,
+                    "arriving_shipments": 93
+                }
+            },
+            "orders": {
+                "factory": 42,
+                "retailer": 153,
+                "wholesaler": 150,
+                "distributor": 123
+            }
+        },
+        {
+            "week": 25,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 148,
+                    "in_transit": [],
+                    "incoming_orders": 133,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 136,
+                    "inventory": 0,
+                    "in_transit": [
+                        73,
+                        83
+                    ],
+                    "incoming_orders": 23,
+                    "arriving_shipments": 63
+                },
+                "wholesaler": {
+                    "backlog": 1006,
+                    "inventory": 0,
+                    "in_transit": [
+                        93,
+                        103
+                    ],
+                    "incoming_orders": 145,
+                    "arriving_shipments": 83
+                },
+                "distributor": {
+                    "backlog": 576,
+                    "inventory": 0,
+                    "in_transit": [
+                        113,
+                        123
+                    ],
+                    "incoming_orders": 160,
+                    "arriving_shipments": 103
+                }
+            },
+            "orders": {
+                "factory": 45,
+                "retailer": 145,
+                "wholesaler": 160,
+                "distributor": 133
+            }
+        },
+        {
+            "week": 26,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 158,
+                    "in_transit": [],
+                    "incoming_orders": 143,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 89,
+                    "inventory": 0,
+                    "in_transit": [
+                        83,
+                        93
+                    ],
+                    "incoming_orders": 26,
+                    "arriving_shipments": 73
+                },
+                "wholesaler": {
+                    "backlog": 1058,
+                    "inventory": 0,
+                    "in_transit": [
+                        103,
+                        113
+                    ],
+                    "incoming_orders": 139,
+                    "arriving_shipments": 93
+                },
+                "distributor": {
+                    "backlog": 623,
+                    "inventory": 0,
+                    "in_transit": [
+                        123,
+                        133
+                    ],
+                    "incoming_orders": 170,
+                    "arriving_shipments": 113
+                }
+            },
+            "orders": {
+                "factory": 48,
+                "retailer": 139,
+                "wholesaler": 170,
+                "distributor": 143
+            }
+        },
+        {
+            "week": 27,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 168,
+                    "in_transit": [],
+                    "incoming_orders": 153,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 30,
+                    "inventory": 0,
+                    "in_transit": [
+                        93,
+                        103
+                    ],
+                    "incoming_orders": 24,
+                    "arriving_shipments": 83
+                },
+                "wholesaler": {
+                    "backlog": 1094,
+                    "inventory": 0,
+                    "in_transit": [
+                        113,
+                        123
+                    ],
+                    "incoming_orders": 135,
+                    "arriving_shipments": 103
+                },
+                "distributor": {
+                    "backlog": 670,
+                    "inventory": 0,
+                    "in_transit": [
+                        133,
+                        143
+                    ],
+                    "incoming_orders": 180,
+                    "arriving_shipments": 123
+                }
+            },
+            "orders": {
+                "factory": 51,
+                "retailer": 135,
+                "wholesaler": 180,
+                "distributor": 153
+            }
+        },
+        {
+            "week": 28,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 178,
+                    "in_transit": [],
+                    "incoming_orders": 163,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 36,
+                    "in_transit": [
+                        103,
+                        113
+                    ],
+                    "incoming_orders": 27,
+                    "arriving_shipments": 93
+                },
+                "wholesaler": {
+                    "backlog": 1116,
+                    "inventory": 0,
+                    "in_transit": [
+                        123,
+                        133
+                    ],
+                    "incoming_orders": 132,
+                    "arriving_shipments": 113
+                },
+                "distributor": {
+                    "backlog": 717,
+                    "inventory": 0,
+                    "in_transit": [
+                        143,
+                        153
+                    ],
+                    "incoming_orders": 190,
+                    "arriving_shipments": 133
+                }
+            },
+            "orders": {
+                "factory": 54,
+                "retailer": 132,
+                "wholesaler": 190,
+                "distributor": 163
+            }
+        },
+        {
+            "week": 29,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 188,
+                    "in_transit": [],
+                    "incoming_orders": 173,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 115,
+                    "in_transit": [
+                        113,
+                        123
+                    ],
+                    "incoming_orders": 24,
+                    "arriving_shipments": 103
+                },
+                "wholesaler": {
+                    "backlog": 1125,
+                    "inventory": 0,
+                    "in_transit": [
+                        133,
+                        143
+                    ],
+                    "incoming_orders": 129,
+                    "arriving_shipments": 123
+                },
+                "distributor": {
+                    "backlog": 764,
+                    "inventory": 0,
+                    "in_transit": [
+                        153,
+                        163
+                    ],
+                    "incoming_orders": 200,
+                    "arriving_shipments": 143
+                }
+            },
+            "orders": {
+                "factory": 57,
+                "retailer": 129,
+                "wholesaler": 200,
+                "distributor": 173
+            }
+        },
+        {
+            "week": 30,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 198,
+                    "in_transit": [],
+                    "incoming_orders": 183,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 202,
+                    "in_transit": [
+                        123,
+                        133
+                    ],
+                    "incoming_orders": 26,
+                    "arriving_shipments": 113
+                },
+                "wholesaler": {
+                    "backlog": 1121,
+                    "inventory": 0,
+                    "in_transit": [
+                        143,
+                        153
+                    ],
+                    "incoming_orders": 126,
+                    "arriving_shipments": 133
+                },
+                "distributor": {
+                    "backlog": 811,
+                    "inventory": 0,
+                    "in_transit": [
+                        163,
+                        173
+                    ],
+                    "incoming_orders": 210,
+                    "arriving_shipments": 153
+                }
+            },
+            "orders": {
+                "factory": 60,
+                "retailer": 126,
+                "wholesaler": 210,
+                "distributor": 183
+            }
+        },
+        {
+            "week": 31,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 208,
+                    "in_transit": [],
+                    "incoming_orders": 193,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 301,
+                    "in_transit": [
+                        133,
+                        143
+                    ],
+                    "incoming_orders": 24,
+                    "arriving_shipments": 123
+                },
+                "wholesaler": {
+                    "backlog": 1104,
+                    "inventory": 0,
+                    "in_transit": [
+                        153,
+                        163
+                    ],
+                    "incoming_orders": 123,
+                    "arriving_shipments": 143
+                },
+                "distributor": {
+                    "backlog": 858,
+                    "inventory": 0,
+                    "in_transit": [
+                        173,
+                        183
+                    ],
+                    "incoming_orders": 220,
+                    "arriving_shipments": 163
+                }
+            },
+            "orders": {
+                "factory": 63,
+                "retailer": 123,
+                "wholesaler": 220,
+                "distributor": 193
+            }
+        },
+        {
+            "week": 32,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 218,
+                    "in_transit": [],
+                    "incoming_orders": 203,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 410,
+                    "in_transit": [
+                        143,
+                        153
+                    ],
+                    "incoming_orders": 24,
+                    "arriving_shipments": 133
+                },
+                "wholesaler": {
+                    "backlog": 1074,
+                    "inventory": 0,
+                    "in_transit": [
+                        163,
+                        173
+                    ],
+                    "incoming_orders": 120,
+                    "arriving_shipments": 153
+                },
+                "distributor": {
+                    "backlog": 905,
+                    "inventory": 0,
+                    "in_transit": [
+                        183,
+                        193
+                    ],
+                    "incoming_orders": 230,
+                    "arriving_shipments": 173
+                }
+            },
+            "orders": {
+                "factory": 66,
+                "retailer": 120,
+                "wholesaler": 230,
+                "distributor": 203
+            }
+        },
+        {
+            "week": 33,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 228,
+                    "in_transit": [],
+                    "incoming_orders": 213,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 530,
+                    "in_transit": [
+                        153,
+                        163
+                    ],
+                    "incoming_orders": 23,
+                    "arriving_shipments": 143
+                },
+                "wholesaler": {
+                    "backlog": 1031,
+                    "inventory": 0,
+                    "in_transit": [
+                        173,
+                        183
+                    ],
+                    "incoming_orders": 117,
+                    "arriving_shipments": 163
+                },
+                "distributor": {
+                    "backlog": 952,
+                    "inventory": 0,
+                    "in_transit": [
+                        193,
+                        203
+                    ],
+                    "incoming_orders": 240,
+                    "arriving_shipments": 183
+                }
+            },
+            "orders": {
+                "factory": 69,
+                "retailer": 117,
+                "wholesaler": 240,
+                "distributor": 213
+            }
+        },
+        {
+            "week": 34,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 238,
+                    "in_transit": [],
+                    "incoming_orders": 223,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 657,
+                    "in_transit": [
+                        163,
+                        173
+                    ],
+                    "incoming_orders": 26,
+                    "arriving_shipments": 153
+                },
+                "wholesaler": {
+                    "backlog": 975,
+                    "inventory": 0,
+                    "in_transit": [
+                        183,
+                        193
+                    ],
+                    "incoming_orders": 114,
+                    "arriving_shipments": 173
+                },
+                "distributor": {
+                    "backlog": 999,
+                    "inventory": 0,
+                    "in_transit": [
+                        203,
+                        213
+                    ],
+                    "incoming_orders": 250,
+                    "arriving_shipments": 193
+                }
+            },
+            "orders": {
+                "factory": 72,
+                "retailer": 114,
+                "wholesaler": 250,
+                "distributor": 223
+            }
+        },
+        {
+            "week": 35,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 248,
+                    "in_transit": [],
+                    "incoming_orders": 233,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 796,
+                    "in_transit": [
+                        173,
+                        183
+                    ],
+                    "incoming_orders": 24,
+                    "arriving_shipments": 163
+                },
+                "wholesaler": {
+                    "backlog": 906,
+                    "inventory": 0,
+                    "in_transit": [
+                        193,
+                        203
+                    ],
+                    "incoming_orders": 111,
+                    "arriving_shipments": 183
+                },
+                "distributor": {
+                    "backlog": 1046,
+                    "inventory": 0,
+                    "in_transit": [
+                        213,
+                        223
+                    ],
+                    "incoming_orders": 260,
+                    "arriving_shipments": 203
+                }
+            },
+            "orders": {
+                "factory": 75,
+                "retailer": 111,
+                "wholesaler": 260,
+                "distributor": 233
+            }
+        },
+        {
+            "week": 36,
+            "roles": {
+                "factory": {
+                    "backlog": 0,
+                    "inventory": 258,
+                    "in_transit": [],
+                    "incoming_orders": 243,
+                    "arriving_shipments": 0
+                },
+                "retailer": {
+                    "backlog": 0,
+                    "inventory": 946,
+                    "in_transit": [
+                        183,
+                        193
+                    ],
+                    "incoming_orders": 23,
+                    "arriving_shipments": 173
+                },
+                "wholesaler": {
+                    "backlog": 824,
+                    "inventory": 0,
+                    "in_transit": [
+                        203,
+                        213
+                    ],
+                    "incoming_orders": 108,
+                    "arriving_shipments": 193
+                },
+                "distributor": {
+                    "backlog": 1093,
+                    "inventory": 0,
+                    "in_transit": [
+                        223,
+                        233
+                    ],
+                    "incoming_orders": 270,
+                    "arriving_shipments": 213
+                }
+            },
+            "orders": {
+                "factory": 78,
+                "retailer": 108,
+                "wholesaler": 270,
+                "distributor": 243
+            }
+        }
+    ],
+    "error": null,
+    "createdAt": "2025-10-16T11:09:56.489Z",
+    "bot": {
+        "shortName": "dmdere"
+    }
+}
